@@ -1,0 +1,62 @@
+//Ahmad Haziq Khalis Bin Khairul Anuar 2021619528
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <string.h>
+
+//when program receive CTRL+C signal, program will prints out a message and exits the program
+void sigint_handler(int sig){
+    printf("\nInterrupt signal detected. Exiting.\n");
+    exit(EXIT_SUCCESS);
+}
+
+int main(void){
+    int pipefds[2];
+    char input[500];
+    char buff[500];
+
+    //precaution for pipe error
+    if(pipe(pipefds)==-1){
+        perror("pipe");
+        exit(EXIT_FAILURE);
+    }
+
+    pid_t pid = fork();
+
+    if(pid==0){ //child process
+        //displays message receive from parent on terminal
+        close(pipefds[1]); // child does not write to pipe
+        for(int i=0;i<3;i++){
+            read(pipefds[0], buff, sizeof(buff));
+            printf("\nChild process %d received message: %s\n", getpid(), buff);
+        }
+        close(pipefds[0]);
+        exit(EXIT_SUCCESS);
+    }
+    else if(pid==-1){ //precaution for fork error
+        perror("fork");
+        exit(EXIT_FAILURE);
+    }
+    else{ //parent process
+        //asks user input and will fork into child process with pipe
+        close(pipefds[0]); // parent does not read from pipe
+        if(signal(SIGINT, sigint_handler)==SIG_ERR){
+            perror("signal");
+            exit(EXIT_FAILURE);
+        }
+        printf("\nEnter a message to child process : ");
+        fgets(input, sizeof(input), stdin);
+        for(int i=0;i<3;i++){
+            write(pipefds[1], input, strlen(input)+1); //write the whole string including null terminator
+        }
+        close(pipefds[1]);
+        wait(NULL);
+    }
+
+    printf("\nAll child processes completed.\n");
+    return EXIT_SUCCESS;
+}
