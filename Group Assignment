@@ -1,0 +1,58 @@
+//C Client:
+//CS2554B GROUP 4
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+
+#define PORT 8484
+
+int main() {
+    int client_socket;
+    struct sockaddr_in server_address;
+
+    char server_ip[20];
+    printf("Enter server IP address: ");
+    fgets(server_ip, sizeof(server_ip), stdin);
+    server_ip[strcspn(server_ip, "\n")] = '\0';
+
+    char user_input[1024];
+    printf("Enter a string: ");
+    fgets(user_input, sizeof(user_input), stdin);
+    user_input[strcspn(user_input, "\n")] = '\0';
+
+    client_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (client_socket == -1) {
+        perror("Socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(PORT);
+    if (inet_pton(AF_INET, server_ip, &(server_address.sin_addr)) <= 0) {
+        perror("Invalid server IP address");
+        exit(EXIT_FAILURE);
+    }
+
+    if (connect(client_socket, (struct sockaddr *)&server_address, sizeof(server_address)) == -1) {
+        perror("Connection failed");
+        exit(EXIT_FAILURE);
+    }
+
+    send(client_socket, user_input, strlen(user_input), 0);
+
+    char response[1024];
+    ssize_t num_bytes = recv(client_socket, response, sizeof(response), 0);
+    if (num_bytes > 0) {
+        response[num_bytes] = '\0';
+        printf("Server response: %s\n", response);
+    }
+
+    close(client_socket);
+
+    return 0;
+}
