@@ -1,3 +1,6 @@
+# Ahmad Haziq Khalis bin Khairul Anuar 2021619528
+# Write a client program to get user input pressure value in bar and display received atmosphere-standard value from server.  Display it accordingly
+
 import socket
 
 def get_server_info():
